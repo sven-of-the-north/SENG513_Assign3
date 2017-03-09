@@ -1,6 +1,6 @@
 var socket = io();
 var myName = "";
-var myColor = '#000';
+var myColor = '#000000';
 var userList = [];
 
 $(function () {
@@ -42,6 +42,11 @@ $(function () {
 			myName = data.username;
 		if (data.color)
 			myColor = data.color;
+		if (data.chatHistory) {
+			for ( let entry of data.chatHistory ) {
+				$('#messageList').css('color', entry.color).append($('<li>').html(buildMessageString(entry)));
+			}
+		}
 		if (data.message) {
 			data.username = 'Server';
 			$('#messageList').append($('<li>').css('color', "red").html(buildMessageString(data)));

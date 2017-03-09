@@ -21,7 +21,7 @@ io.sockets.on('connect', function (socket) {
 	var name = generateUsername();
 	clients.set(socket, {
 		username: name,
-		color: '#000'
+		color: '#000000'
 	});
 
 	generateUserList();
@@ -30,7 +30,8 @@ io.sockets.on('connect', function (socket) {
 		timestamp: getTimestamp(),
 		message: 'Welcome to the chat! You have been auto-assigned the username: ' + name + ".",
 		username: name,
-		userList: currentUsers
+		userList: currentUsers,
+		chatHistory: chatHistory
 	});
 
 	socket.broadcast.emit('serverMessage', {
@@ -48,7 +49,7 @@ io.sockets.on('connection', function (socket) {
 		if (data.message.startsWith('/')) {
 			handleServerCommand(socket, data.message);
 		} else {
-			chatHistory.push(data.message);
+			chatHistory.push(data);
 			data.timestamp = getTimestamp();
 			console.log("Broadcasting message: " + data.message);
 			io.sockets.emit('message', data);
@@ -177,7 +178,7 @@ handleChangeNickColor = function (socket, tokens) {
 		});
 	} else {
 		let userInfo = clients.get(socket);
-		let newColor = tokens[1].match(/(^#[0-9a-fA-F]{1,6})/g);
+		let newColor = tokens[1].match(/(^#[0-9a-fA-F]{6})/g);
 		if (!newColor) {
 			console.log("Bad nickcolor change request: " + tokens[1]);
 			socket.emit('serverMessage', {
@@ -185,10 +186,10 @@ handleChangeNickColor = function (socket, tokens) {
 				message: "That's not a color! Use the form '#FFFFFF' to pick a color!"
 			});
 		} else {
-			userInfo.color = newColor;
+			userInfo.color = newColor[0];
 			socket.emit('serverMessage', {
 				timestamp: getTimestamp(),
-				color: newColor,
+				color: userInfo.color,
 				message: "Successfully changed color to <font color=\"" + newColor + "\">" + newColor + "</font>"
 			});
 
