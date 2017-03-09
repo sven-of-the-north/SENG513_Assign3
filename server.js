@@ -3,6 +3,8 @@ var app = express();
 var port = process.env.PORT || 3000;
 var clients = new Map();
 var charSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+var chatHistory = [];
+var io = require('socket.io').listen(app.listen(port));
 
 app.set('views', __dirname +'/pug');
 app.set('view engine', "pug");
@@ -13,8 +15,7 @@ app.get("/", function( req, res ) {
 	res.render("page");
 });
 
-var io = require('socket.io').listen(app.listen(port));
-io.sockets.on('connection', function(socket) {
+io.sockets.on('connect', function(socket) {
 	var name = generateUsername();
 	clients.set(name, socket);
 	
@@ -24,21 +25,36 @@ io.sockets.on('connection', function(socket) {
 		autoUsername: name,
 		userList: generateUserList()
 	});
-	console.log("User connected:" + name);
 	
-	io.sockets.emit('serverMessage', {
+	socket.broadcast.emit('serverMessage', {
 		timestamp: getTimestamp(),
 		message: '<i>' + name + '</i> has joined the room.',
 		userList: generateUserList()
-	})
-	
-	socket.on('send', function(data) {
-		data.timestamp = getTimestamp();
-		io.sockets.emit('message', data);
 	});
 	
-	socket.on('disconnect', function() {
-		let deadUser = '';
+	console.log("User connected:" + name);
+});
+
+io.sockets.on('connection', function(socket) {
+	socket.on('message', function(data) {
+		console.log( "message received:" + data.message );
+		switch ( parseMessage(data.message) ) {
+			case 0:	//bad server command
+				break;
+			case 1:	//server command
+				break;
+			case 2:	//regular message
+				chatHistory.push( data.message );
+				data.timestamp = getTimestamp();
+				console.log( "sending message: " + data.message );
+				io.sockets.emit('message', data);
+				break;
+		}
+	});
+});
+
+io.sockets.on('disconnect', function() {
+	let deadUser = '';
 		for ( let [userId, connection] of clients ) {
 			if ( socket == connection ) {
 				deadUser = userId;
@@ -48,12 +64,11 @@ io.sockets.on('connection', function(socket) {
 			}
 		}
 	
-		io.sockets.emit('serverMessage', {
-			timestamp: getTimestamp(),
-			message: '<i>' + deadUser + '</i> has left the room.',
-			userList: generateUserList()
-		})
-	})
+	io.sockets.emit('serverMessage', {
+		timestamp: getTimestamp(),
+		message: '<i>' + deadUser + '</i> has left the room.',
+		userList: generateUserList()
+	});
 });
 
 getTimestamp = function () {
@@ -93,4 +108,18 @@ generateUserList = function () {
 	return userList.sort();
 };
 
+parseMessage = function( message ) {
+	if ( message.match('^\/') ) {
+		let tokens = message.split(" ");
+		switch( tokens[0] ) {
+			case '/nick':
+				break;
+			case '/nickcolor':
+				break;
+			default:
+				return 0;
+		}
+	}
+	return 2;
+};
 console.log("Listening on port " + port);

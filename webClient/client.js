@@ -4,11 +4,11 @@ $(function() {
 	var userList = [];
 	
 	sendMessage = function () {
-		socket.emit('send', { username: username, message: $('#field').val() });
-		$('#field').val('');
+		socket.emit('message', { username: username, message: $('#textField').val() });
+		$('#textField').val('');
 	};
 	
-	$("#field").keyup(function(e) {
+	$("#textField").keyup(function(e) {
 		if(e.keyCode == 13) {
 			sendMessage();
 		}
@@ -34,6 +34,5 @@ $(function() {
 		if ( data.message )
 			$('#messageList').append($('<li>').html( buildMessageString( data ) ) );
 	})
-	
 	
 });
