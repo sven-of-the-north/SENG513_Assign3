@@ -7,10 +7,14 @@ html
 		script(src='/socket.io/socket.io.js')
 		script(src='/client.js')
 	body
-		.content
+		#content
 			#textArea
 				ul#messageList
 			#userList
-		.controls
-			input#field(style='width:90%; margin-right:10px' placeholder='Enter text...')
-			input#sendButton(type='button', value='send')
+				p USERLIST GOES HERE
+		#empty
+		#controls
+			#field
+				input#textField(placeholder='Enter text...')
+			#button
+				input#sendButton(type='button', value='Send')

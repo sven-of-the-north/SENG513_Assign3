@@ -35,4 +35,5 @@ $(function() {
 			$('#messageList').append($('<li>').html( buildMessageString( data ) ) );
 	})
 	
+	
 });

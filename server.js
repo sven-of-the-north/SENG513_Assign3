@@ -26,6 +26,12 @@ io.sockets.on('connection', function(socket) {
 	});
 	console.log("User connected:" + name);
 	
+	io.sockets.emit('serverMessage', {
+		timestamp: getTimestamp(),
+		message: '<i>' + name + '</i> has joined the room.',
+		userList: generateUserList()
+	})
+	
 	socket.on('send', function(data) {
 		data.timestamp = getTimestamp();
 		io.sockets.emit('message', data);
