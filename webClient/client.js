@@ -1,11 +1,13 @@
 var socket = io();
 var myName = "";
+var myColor = '#000';
 var userList = [];
 
 $(function () {
 	sendMessage = function () {
 		socket.emit('message', {
 			username: myName,
+			color: myColor,
 			message: $('#textField').val()
 		});
 		$('#textField').val('');
@@ -26,21 +28,23 @@ $(function () {
 	}
 
 	socket.on('message', function (data) {
-		$('#messageList').append($('<li>').html(buildMessageString(data)));
+		$('#messageList').css('color', data.color).append($('<li>').html(buildMessageString(data)));
 	})
 
 	socket.on('serverMessage', function (data) {
 		handleServerMessage(data);
 	});
-});
-
-handleServerMessage = function (data) {
-	if (data.userList) 
-		userList = data.userList;
-	if (data.username) 
-		myName = data.username;		
-	if (data.message) {
-		data.username = 'Server'
-		$('#messageList').append($('<li>').html(buildMessageString(data))).css("color", "red");
+	
+	handleServerMessage = function (data) {
+		if (data.userList) 
+			userList = data.userList;
+		if (data.username) 
+			myName = data.username;
+		if (data.color)
+			myColor = data.color;
+		if (data.message) {
+			data.username = 'Server';
+			$('#messageList').append($('<li>').css('color', "red").html(buildMessageString(data)));
+		}
 	}
-}
+});

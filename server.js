@@ -159,7 +159,7 @@ handleChangeNickname = function( socket, tokens ) {
 			
 			generateUserList();
 			
-			io.sockets.emit('serverMessage', {
+			socket.broadcast.emit('serverMessage', {
 				timestamp: getTimestamp(),
 				message: '<i>' + oldName + '</i> is now known as <i>' + userInfo.username + '</i>',
 				userList: currentUsers
@@ -170,7 +170,32 @@ handleChangeNickname = function( socket, tokens ) {
 };
 
 handleChangeNickColor = function( socket, tokens ) {
-	
-}
+	if ( tokens.length < 2 ) {
+		console.log("No new colour supplied");
+		socket.emit('serverMessage', {
+			timestamp: getTimestamp(),
+			message: "You didn't supply a new nickcolor!"
+		});
+	} else {
+		let userInfo = clients.get(socket);
+		let newColor = tokens[1].match(/(^#[0-9a-fA-F]{1,6})/g);
+		if ( !newColor ) {
+			console.log("Bad nickcolor change request: " + tokens[1]);
+			socket.emit('serverMessage', {
+				timestamp: getTimestamp(),
+				message: "That's not a color! Use a the form '#FFFFFF' to pick a color!"
+			});
+		} else {
+			userInfo.color = newColor;
+			socket.emit('serverMessage', {
+				timestamp: getTimestamp(),
+				color: newColor,
+				message: "Successfully changed color to <font color=\"" + newColor + "\">" + newColor + "</font>"
+			});
+			
+			console.log("Setting color for " + userInfo.username + " to " + newColor);
+		}
+	}
+};
 
 console.log("Listening on port " + port);
