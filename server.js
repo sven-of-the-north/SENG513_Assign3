@@ -45,7 +45,7 @@ io.sockets.on('connect', function (socket) {
 
 io.sockets.on('connection', function (socket) {
 	socket.on('message', function (data) {
-		console.log("Message received: '" + data.message + "' from: " + data.username);
+		console.log("Message received: '" + data.message + "' from: " + data.username+ "(" + data.color + ")");
 		if (data.message.startsWith('/')) {
 			handleServerCommand(socket, data.message);
 		} else {
@@ -97,10 +97,13 @@ getTimestamp = function () {
 generateUsername = function () {
 	let text = "";
 
-	for (var i = 0; i < 7; i++)
+	for (let i = 0; i < 7; i++)
 		text += charSet.charAt(Math.floor(Math.random() * charSet.length));
-	while (clients.has(text))
-		text = generateUsername(); //possible dangerous recursion? seems unlikely
+	
+	for (let user in currentUsers) {
+		if ( user.username === text )
+			generateUsername();
+	}
 
 	return text;
 };
@@ -109,9 +112,11 @@ generateUserList = function () {
 	currentUsers = [];
 
 	for (let[socket, info]of clients)
-		currentUsers.push(info.username);
+		currentUsers.push( info );
 
-	currentUsers.sort();
+	currentUsers.sort(function(a, b){
+		return a.username < b.username ? -1 : 1;
+	});
 };
 
 handleServerCommand = function (socket, message) {
@@ -143,7 +148,7 @@ handleChangeNickname = function (socket, tokens) {
 	} else {
 		let userInfo = clients.get(socket);
 		let oldName = userInfo.username;
-		if (/[\W]/.test(tokens[1]) || tokens[1].trim().length === 0) {
+		if (/[\W]/.test(tokens[1].slice(0, -1)) || tokens[1].trim().length === 0) {
 			console.log("Bad nickname change request: " + tokens[1]);
 			socket.emit('serverMessage', {
 				timestamp: getTimestamp(),
@@ -151,13 +156,14 @@ handleChangeNickname = function (socket, tokens) {
 			});
 		} else {
 			userInfo.username = tokens[1];
+			generateUserList();
+			
 			socket.emit('serverMessage', {
 				timestamp: getTimestamp(),
 				username: tokens[1],
-				message: "Successfully changed nickname to " + tokens[1]
+				message: "Successfully changed nickname to " + tokens[1],
+				userList: currentUsers
 			});
-
-			generateUserList();
 
 			socket.broadcast.emit('serverMessage', {
 				timestamp: getTimestamp(),
@@ -193,6 +199,12 @@ handleChangeNickColor = function (socket, tokens) {
 				message: "Successfully changed color to <font color=\"" + newColor + "\">" + newColor + "</font>"
 			});
 
+			generateUserList();
+			
+			io.sockets.emit('serverMessage', {
+				userList: currentUsers
+			});
+			
 			console.log("Setting color for " + userInfo.username + " to " + newColor);
 		}
 	}

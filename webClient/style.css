@@ -13,6 +13,11 @@ body {
 	overflow-y: scroll;
 }
 
+ul {
+	font-family: "Lucida Console", Monospace, Sans-serif;
+	font-size: 14px;
+}
+
 #content{
 	width: 100%;
 	height: calc( 100% - 81px );

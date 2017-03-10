@@ -1,11 +1,10 @@
 var socket = io();
 var myName = "";
 var myColor = '#000000';
-var userList = [];
 
 $(function () {
 	socket.on('message', function (data) {
-		$('#messageList').css('color', data.color).append($('<li>').html(buildMessageString(data)));
+		$('#messageList').append($('<li>').html(buildMessageString(data)));
 	});
 
 	socket.on('serverMessage', function (data) {
@@ -23,7 +22,13 @@ $(function () {
 	});
 
 	buildMessageString = function (data) {
-		return '<b><i>' + data.timestamp + '</i> | ' + data.username + ": </b>" + data.message;
+		let string = '';
+		if (data.username === myName)
+			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: " + data.message + '</b>';
+		else
+			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: </b>" + data.message;
+		
+		return string;
 	};
 
 	sendMessage = function () {
@@ -36,19 +41,24 @@ $(function () {
 	};
 
 	handleServerMessage = function (data) {
-		if (data.userList)
-			userList = data.userList;
 		if (data.username)
 			myName = data.username;
 		if (data.color)
 			myColor = data.color;
+		if (data.userList) {
+			$('#userList').empty();
+			for ( let user of data.userList ) {
+				$('#userList').append($('<li>').html('<b><font color="' + user.color + '">' + user.username + '</font></b>'));
+			}
+		}
 		if (data.chatHistory) {
 			for ( let entry of data.chatHistory ) {
-				$('#messageList').css('color', entry.color).append($('<li>').html(buildMessageString(entry)));
+				$('#messageList').append($('<li>').html(buildMessageString(entry)));
 			}
 		}
 		if (data.message) {
 			data.username = 'Server';
+			data.color = "red";
 			$('#messageList').append($('<li>').css('color', "red").html(buildMessageString(data)));
 		}
 	};
