@@ -3,6 +3,15 @@ var myName = "";
 var myColor = '#000000';
 
 $(function () {
+	if ( Cookies.getJSON('profile') ) {
+		myName = Cookies.getJSON('profile').username;
+		myColor = Cookies.getJSON('profile').color;
+	}
+	
+	socket.on('connect', function(data) {
+		socket.emit('connectRequest', Cookies.getJSON('profile') );
+	});
+	
 	socket.on('message', function (data) {
 		$('#messageList').append($('<li>').html(buildMessageString(data)));
 		
@@ -23,7 +32,7 @@ $(function () {
 
 	buildMessageString = function (data) {
 		let string = '';
-		if (data.socketId === socket.id)
+		if (data.userId === socket.id)
 			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: " + data.message + '</b>';
 		else
 			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: </b>" + data.message;
@@ -42,10 +51,12 @@ $(function () {
 	};
 
 	handleServerMessage = function (data) {
-		if (data.username)
-			myName = data.username;
-		if (data.color)
+		if (data.color) {
 			myColor = data.color;
+		}		
+		if (data.username) {
+			myName = data.username;
+		}
 		if (data.userList) {
 			$('#userList').empty();
 			for ( let user of data.userList ) {
@@ -73,5 +84,9 @@ $(function () {
 				$('#messageList').scrollTop($('#messageList')[0].scrollHeight);
 			}
 		}
+		Cookies.set('profile', {
+			username: myName,
+			color: myColor
+		});
 	};
 });

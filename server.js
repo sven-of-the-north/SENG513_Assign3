@@ -18,48 +18,69 @@ app.get("/", function (req, res) {
 });
 
 io.sockets.on('connect', function (socket) {
-	var name = generateUsername();
-	clients.set(socket, {
-		username: name,
-		color: '#000000'
-	});
+	socket.on('connectRequest', function ( cookie ) {
+		let newUser = false;
+		let name = '';
+		let color = '#000000';
+		
+		if ( !cookie ) {
+			newUser = true;
+			name = generateUsername();
+		} else {
+			name = cookie.username;
+			color = cookie.color;
+		}
+		
+		clients.set(socket, {
+			username: name,
+			color: color
+		});
+		
+		let time = getTimestamp();
+		
+		generateUserList();
 
-	let time = getTimestamp();
-	
-	generateUserList();
+		socket.broadcast.emit('serverMessage', {
+			timestamp: time,
+			message: '<i>' + name + '</i> has joined the room.',
+			userList: currentUsers
+		});
+		
+		updateHistory({
+			timestamp: time,
+			message: '<i>' + name + '</i> has joined the room.',
+			serverMessage: true
+		});
+		
+		let welcomeString = '';
+		if ( newUser ) {
+			welcomeString = 'Welcome to the chat! You have been auto-assigned the username: ' + name + ".";
+		}
+		else {
+			welcomeString = 'Welcome back, ' + name + ".";
+		}
+		
+		socket.emit('serverMessage', {
+			timestamp: time,
+			message: welcomeString,
+			username: name,
+			userList: currentUsers,
+			chatHistory: chatHistory
+		});
 
-	socket.broadcast.emit('serverMessage', {
-		timestamp: time,
-		message: '<i>' + name + '</i> has joined the room.',
-		userList: currentUsers
+		console.log("User connected:" + name);
 	});
-	
-	chatHistory.push({
-		timestamp: time,
-		message: '<i>' + name + '</i> has joined the room.',
-		serverMessage: true
-	});
-	
-	socket.emit('serverMessage', {
-		timestamp: time,
-		message: 'Welcome to the chat! You have been auto-assigned the username: ' + name + ".",
-		username: name,
-		userList: currentUsers,
-		chatHistory: chatHistory
-	});
-
-	console.log("User connected:" + name);
 });
 
 io.sockets.on('connection', function (socket) {
 	socket.on('message', function (data) {
-		console.log("Message received: '" + data.message + "' from: " + data.username+ "(" + data.color + ")");
+		console.log("Message received: '" + data.message.slice(0, -1) + "' from: " + data.username+ "(" + data.color + ")");
 		if (data.message.startsWith('/')) {
-			handleServerCommand(socket, data.message);
+			handleServerCommand(socket, data.message.slice(0, -1));
 		} else {
-			chatHistory.push(data);
+			updateHistory(data);
 			data.timestamp = getTimestamp();
-			console.log("Broadcasting message: " + data.message);
+			console.log("Broadcasting message: " + data.message.slice(0, -1));
 			io.sockets.emit('message', data);
 		}
 	});
@@ -86,7 +107,7 @@ io.sockets.on('connection', function (socket) {
 			userList: currentUsers
 		});
 		
-		chatHistory.push({
+		updateHistory({
 			timestamp: time,
 			message: '<i>' + deadUser + '</i> has left the room.',
 			serverMessage: true
@@ -172,13 +193,13 @@ handleChangeNickname = function (socket, tokens) {
 				message: "Your nickname must contain only alphanumeric characters"
 			});
 		} else {
-			userInfo.username = tokens[1];
+			userInfo.username = tokens[1].match(/\w+/)[0];
 			generateUserList();
 			
 			socket.emit('serverMessage', {
 				timestamp: getTimestamp(),
-				username: tokens[1],
-				message: "Successfully changed nickname to " + tokens[1],
+				username: userInfo.username,
+				message: "Successfully changed nickname to " + userInfo.username,
 				userList: currentUsers
 			});
 
@@ -187,7 +208,7 @@ handleChangeNickname = function (socket, tokens) {
 				message: '<i>' + oldName + '</i> is now known as <i>' + userInfo.username + '</i>',
 				userList: currentUsers
 			});
-			console.log("Setting nickname for " + oldName + " to " + tokens[1]);
+			console.log("Setting nickname for " + oldName + " to " + userInfo.username);
 		}
 	}
 };
@@ -226,5 +247,12 @@ handleChangeNickColor = function (socket, tokens) {
 		}
 	}
 };
+
+updateHistory = function( data ) {
+	if ( chatHistory.length >= 500 ) {
+		chatHistory.shift();
+	}
+	chatHistory.push(data);
+}
 
 console.log("Listening on port " + port);
