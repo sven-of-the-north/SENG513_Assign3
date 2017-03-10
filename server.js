@@ -24,20 +24,28 @@ io.sockets.on('connect', function (socket) {
 		color: '#000000'
 	});
 
+	let time = getTimestamp();
+	
 	generateUserList();
 
+	socket.broadcast.emit('serverMessage', {
+		timestamp: time,
+		message: '<i>' + name + '</i> has joined the room.',
+		userList: currentUsers
+	});
+	
+	chatHistory.push({
+		timestamp: time,
+		message: '<i>' + name + '</i> has joined the room.',
+		serverMessage: true
+	});
+	
 	socket.emit('serverMessage', {
-		timestamp: getTimestamp(),
+		timestamp: time,
 		message: 'Welcome to the chat! You have been auto-assigned the username: ' + name + ".",
 		username: name,
 		userList: currentUsers,
 		chatHistory: chatHistory
-	});
-
-	socket.broadcast.emit('serverMessage', {
-		timestamp: getTimestamp(),
-		message: '<i>' + name + '</i> has joined the room.',
-		userList: currentUsers
 	});
 
 	console.log("User connected:" + name);
@@ -65,14 +73,23 @@ io.sockets.on('connection', function (socket) {
 		}
 
 		clients.delete (socket);
+		
+		let time = getTimestamp();
+		
 		console.log("User disconnected:" + deadUser);
 
 		generateUserList();
 
 		io.sockets.emit('serverMessage', {
-			timestamp: getTimestamp(),
+			timestamp: time,
 			message: '<i>' + deadUser + '</i> has left the room.',
 			userList: currentUsers
+		});
+		
+		chatHistory.push({
+			timestamp: time,
+			message: '<i>' + deadUser + '</i> has left the room.',
+			serverMessage: true
 		});
 	});
 });

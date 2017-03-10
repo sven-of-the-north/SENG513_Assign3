@@ -5,25 +5,25 @@ var myColor = '#000000';
 $(function () {
 	socket.on('message', function (data) {
 		$('#messageList').append($('<li>').html(buildMessageString(data)));
+		
+		if ( $('#messageList').scrollTop() >= ( $('#messageList')[0].scrollHeight - $('#messageList').height() - 100 ) ) {
+			$('#messageList').scrollTop($('#messageList')[0].scrollHeight);
+		}
 	});
 
 	socket.on('serverMessage', function (data) {
 		handleServerMessage(data);
 	});
-
+	
 	$("#textField").keyup(function (e) {
-		if (e.keyCode == 13) {
+		if (e.keyCode == 13) {	
 			sendMessage();
 		}
 	});
 
-	$("#sendButton").click(function () {
-		sendMessage();
-	});
-
 	buildMessageString = function (data) {
 		let string = '';
-		if (data.username === myName)
+		if (data.socketId === socket.id)
 			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: " + data.message + '</b>';
 		else
 			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: </b>" + data.message;
@@ -34,6 +34,7 @@ $(function () {
 	sendMessage = function () {
 		socket.emit('message', {
 			username: myName,
+			userId: socket.id,
 			color: myColor,
 			message: $('#textField').val()
 		});
@@ -53,13 +54,24 @@ $(function () {
 		}
 		if (data.chatHistory) {
 			for ( let entry of data.chatHistory ) {
-				$('#messageList').append($('<li>').html(buildMessageString(entry)));
+				if ( entry.serverMessage ) {
+					entry.username = 'Server';
+					entry.color = "red";
+					$('#messageList').append($('<li>').css('color', "red").html(buildMessageString(entry)));
+				} else {
+					$('#messageList').append($('<li>').html(buildMessageString(entry)));
+				}
 			}
+			$('#messageList').scrollTop($('#messageList')[0].scrollHeight);
 		}
 		if (data.message) {
 			data.username = 'Server';
 			data.color = "red";
 			$('#messageList').append($('<li>').css('color', "red").html(buildMessageString(data)));
+			
+			if ( $('#messageList').scrollTop() >= ( $('#messageList')[0].scrollHeight - $('#messageList').height() - 100 ) ) {
+				$('#messageList').scrollTop($('#messageList')[0].scrollHeight);
+			}
 		}
 	};
 });
