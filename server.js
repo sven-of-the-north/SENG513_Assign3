@@ -266,6 +266,6 @@ updateHistory = function( data ) {
 		chatHistory.shift();
 	}
 	chatHistory.push(data);
-}
+};
 
 console.log("Listening on port " + port);
