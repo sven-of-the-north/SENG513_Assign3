@@ -11,4 +11,5 @@ To start server:
 	node server.js
 
 To start clients:
-Navigate to http://localhost:3000
+
+	Navigate to http://localhost:3000
