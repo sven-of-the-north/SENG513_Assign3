@@ -138,7 +138,7 @@ generateUsername = function () {
 	for (let i = 0; i < 7; i++)
 		text += charSet.charAt(Math.floor(Math.random() * charSet.length));
 	
-	for (let user in currentUsers) {
+	for (let user of currentUsers) {
 		if ( user.username === text )
 			generateUsername();
 	}
@@ -187,13 +187,26 @@ handleChangeNickname = function (socket, tokens) {
 		let userInfo = clients.get(socket);
 		let oldName = userInfo.username;
 		if (/[\W]/.test(tokens[1].slice(0, -1)) || tokens[1].trim().length === 0) {
-			console.log("Bad nickname change request: " + tokens[1]);
+			console.log("Bad nickname change request - bad characters: " + tokens[1]);
 			socket.emit('serverMessage', {
 				timestamp: getTimestamp(),
 				message: "Your nickname must contain only alphanumeric characters"
 			});
 		} else {
-			userInfo.username = tokens[1].match(/\w+/)[0];
+			let newName = tokens[1].match(/\w+/)[0];
+			for (let user of currentUsers) {
+				console.log(user.username);
+				if ( user.username === newName ) {
+					console.log("Bad nickname change request - duplicate name " + newName);
+					socket.emit('serverMessage', {
+						timestamp: getTimestamp(),
+						message: "Your nickname must be unique!"
+					});
+					return;
+				}
+			}
+			
+			userInfo.username = newName;
 			generateUserList();
 			
 			socket.emit('serverMessage', {

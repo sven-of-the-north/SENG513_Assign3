@@ -32,7 +32,7 @@ $(function () {
 
 	buildMessageString = function (data) {
 		let string = '';
-		if (data.userId === socket.id)
+		if (data.userId === socket.id || data.username == myName)
 			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: " + data.message + '</b>';
 		else
 			string = '<b>' + data.timestamp + ' | <font color="' + data.color + '">' + data.username + "</font>: </b>" + data.message;
